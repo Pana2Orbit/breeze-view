@@ -33,19 +33,13 @@ function MapContainer() {
   const [point, setPoint] = useState<google.maps.LatLngLiteral | null>(INITIAL_CENTER);
   const [placeName, setPlaceName] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [geocoder, setGeocoder] = useState<google.maps.Geocoder | null>(null);
-
-  useEffect(() => {
-    if (geocodingLib) {
-      setGeocoder(new geocodingLib.Geocoder());
-    }
-  }, [geocodingLib]);
-
+  
   const getPlaceName = useCallback(async (latLng: google.maps.LatLngLiteral) => {
-    if (!geocoder) {
-        console.error("Geocoder service not available.");
+    if (!geocodingLib) {
+        console.error("Geocoding library not available.");
         return "Servicio no disponible";
     }
+    const geocoder = new geocodingLib.Geocoder();
     try {
         const response = await geocoder.geocode({ location: latLng });
         if (response.results[0]) {
@@ -57,7 +51,7 @@ function MapContainer() {
         console.error("Geocoder failed due to: " + error);
         return "Error en geocodificación";
     }
-  }, [geocoder]);
+  }, [geocodingLib]);
 
   useEffect(() => {
     if (point) {
