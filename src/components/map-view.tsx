@@ -65,7 +65,7 @@ function MapContainer() {
   const getPlaceName = useCallback(async (latLng: google.maps.LatLngLiteral) => {
     if (!geocodingLib) {
         console.error("Geocoding library not available.");
-        return "Servicio no disponible";
+        return "Service not available";
     }
     const geocoder = new geocodingLib.Geocoder();
     try {
@@ -73,11 +73,11 @@ function MapContainer() {
         if (response.results[0]) {
             return response.results[0].formatted_address;
         } else {
-            return "Nombre de la ubicación no encontrado";
+            return "Location name not found";
         }
     } catch (error) {
         console.error("Geocoder failed due to: " + error);
-        return "Error en geocodificación";
+        return "Geocoding error";
     }
   }, [geocodingLib]);
 
@@ -116,13 +116,13 @@ function MapContainer() {
       <Card className="absolute left-1/2 top-4 -translate-x-1/2 transform shadow-2xl md:left-4 md:top-4 md:translate-x-0 w-[calc(100%-2rem)] md:w-96">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="font-headline">Ubicación Seleccionada</CardTitle>
+            <CardTitle className="font-headline">Selected Location</CardTitle>
             {isLoading && (
               <LoaderCircle className="h-5 w-5 animate-spin text-muted-foreground" />
             )}
           </div>
           <CardDescription>
-            Arrastra el marcador para seleccionar una ubicación.
+            Drag the marker to select a location.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -130,15 +130,15 @@ function MapContainer() {
                 <div className="grid gap-2 text-sm">
                     <div className="flex items-center gap-2">
                        <MapPin className="h-4 w-4 text-muted-foreground" />
-                       <span className="font-semibold text-foreground">{placeName || 'Cargando...'}</span>
+                       <span className="font-semibold text-foreground">{placeName || 'Loading...'}</span>
                     </div>
                     <div className="grid grid-cols-2 gap-2 pl-6">
                         <div>
-                            <p className="text-muted-foreground">Latitud</p>
+                            <p className="text-muted-foreground">Latitude</p>
                             <p className="font-mono text-foreground">{point.lat.toFixed(6)}</p>
                         </div>
                         <div>
-                            <p className="text-muted-foreground">Longitud</p>
+                            <p className="text-muted-foreground">Longitude</p>
                             <p className="font-mono text-foreground">{point.lng.toFixed(6)}</p>
                         </div>
                     </div>
@@ -147,8 +147,8 @@ function MapContainer() {
                 <div className="flex items-center gap-3 text-sm text-destructive-foreground bg-destructive/90 p-4 rounded-lg">
                     <AlertTriangle className="h-6 w-6" />
                     <div className="flex flex-col">
-                        <p className="font-bold">Ubicación no válida</p>
-                        <p>Por favor, selecciona un punto dentro de California.</p>
+                        <p className="font-bold">Invalid Location</p>
+                        <p>Please select a point within California.</p>
                     </div>
                 </div>
             )}
