@@ -27,16 +27,10 @@ const INITIAL_ZOOM = 7;
 // --- MAIN COMPONENT ---
 
 export function MapView({ apiKey, mapId }: { apiKey: string; mapId?: string }) {
-  const [point, setPoint] = useState<google.maps.LatLngLiteral | null>(null);
+  const [point, setPoint] = useState<google.maps.LatLngLiteral | null>(INITIAL_CENTER);
   const [placeName, setPlaceName] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   
-  const handleMapClick = (e: google.maps.MapMouseEvent) => {
-    if (e.latLng) {
-      setPoint(e.latLng.toJSON());
-    }
-  };
-
   const handleMarkerDragEnd = (e: google.maps.MapMouseEvent) => {
     if (e.latLng) {
       setPoint(e.latLng.toJSON());
@@ -81,7 +75,6 @@ export function MapView({ apiKey, mapId }: { apiKey: string; mapId?: string }) {
             mapId={mapId || "DEFAULT_MAP_ID"}
             gestureHandling="greedy"
             disableDefaultUI={true}
-            onClick={handleMapClick}
             className="h-full w-full"
             styles={[{ "featureType": "poi", "stylers": [{ "visibility": "off" }] }, { "featureType": "transit", "stylers": [{ "visibility": "off" }] }]}
           >
@@ -97,7 +90,7 @@ export function MapView({ apiKey, mapId }: { apiKey: string; mapId?: string }) {
                 )}
               </div>
               <CardDescription>
-                Haz clic en el mapa para seleccionar una ubicación o arrastra el marcador.
+                Arrastra el marcador para seleccionar una ubicación.
               </CardDescription>
             </CardHeader>
             <CardContent>
