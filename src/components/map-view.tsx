@@ -37,6 +37,12 @@ export function MapView({ apiKey, mapId }: { apiKey: string; mapId?: string }) {
     }
   };
 
+  const handleMarkerDragEnd = (e: google.maps.MapMouseEvent) => {
+    if (e.latLng) {
+      setPoint(e.latLng.toJSON());
+    }
+  };
+
   const getPlaceName = useCallback(async (latLng: google.maps.LatLngLiteral) => {
     if (!window.google || !window.google.maps) {
         console.error("Google Maps API not loaded.");
@@ -79,7 +85,7 @@ export function MapView({ apiKey, mapId }: { apiKey: string; mapId?: string }) {
             className="h-full w-full"
             styles={[{ "featureType": "poi", "stylers": [{ "visibility": "off" }] }, { "featureType": "transit", "stylers": [{ "visibility": "off" }] }]}
           >
-            {point && <AdvancedMarker position={point} />}
+            {point && <AdvancedMarker position={point} draggable={true} onDragEnd={handleMarkerDragEnd} />}
           </Map>
           
           <Card className="absolute left-1/2 top-4 -translate-x-1/2 transform shadow-2xl md:left-4 md:top-4 md:translate-x-0 w-[calc(100%-2rem)] md:w-96">
@@ -91,7 +97,7 @@ export function MapView({ apiKey, mapId }: { apiKey: string; mapId?: string }) {
                 )}
               </div>
               <CardDescription>
-                Haz clic en el mapa para seleccionar una ubicación.
+                Haz clic en el mapa para seleccionar una ubicación o arrastra el marcador.
               </CardDescription>
             </CardHeader>
             <CardContent>
