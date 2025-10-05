@@ -37,8 +37,8 @@ import {
 import { useToast } from "@/hooks/use-toast";
 
 // --- CONFIGURATION ---
-const INITIAL_CENTER = { lat: 40.7128, lng: -74.006 }; // New York City
-const INITIAL_ZOOM = 10;
+const INITIAL_CENTER = { lat: 36.7783, lng: -119.4179 }; // California
+const INITIAL_ZOOM = 7;
 const MIN_RADIUS_KM = 1;
 const MAX_RADIUS_KM = 50;
 const INITIAL_RADIUS_KM = 10;
