@@ -179,6 +179,77 @@ function AirQualityEffect({
   return null;
 }
 
+interface MapContainerProps {
+  apiKey: string;
+  mapId?: string;
+  mode: Mode;
+  point: google.maps.LatLngLiteral | null;
+  radiusKm: number;
+  showAirQuality: boolean;
+  predictions: GeoJSONFeatureCollection | null;
+  handleMapClick: (e: google.maps.MapMouseEvent) => void;
+  handleBoundsChanged: (map: google.maps.Map) => void;
+  setPoint: (point: google.maps.LatLngLiteral | null) => void;
+}
+
+function MapContainer({
+  apiKey,
+  mapId,
+  mode,
+  point,
+  radiusKm,
+  showAirQuality,
+  predictions,
+  handleMapClick,
+  handleBoundsChanged,
+  setPoint,
+}: MapContainerProps) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!map) return;
+    const idleListener = map.addListener('idle', () => {
+      handleBoundsChanged(map);
+      if (mode === 'point' && !point) {
+        setPoint(map.getCenter()!.toJSON());
+      }
+    });
+    return () => google.maps.event.removeListener(idleListener);
+  }, [map, mode, point, handleBoundsChanged, setPoint]);
+  
+  return (
+    <div className="relative h-screen w-screen font-body">
+      <Map
+        defaultCenter={INITIAL_CENTER}
+        defaultZoom={INITIAL_ZOOM}
+        mapId={mapId || "DEFAULT_MAP_ID"}
+        gestureHandling="greedy"
+        disableDefaultUI={true}
+        onClick={handleMapClick}
+        className="h-full w-full"
+        styles={[{ "featureType": "poi", "stylers": [{ "visibility": "off" }] }, { "featureType": "transit", "stylers": [{ "visibility": "off" }] }]}
+      >
+        {mode === "point" && point && (
+          <>
+            <AdvancedMarker position={point} />
+            <Circle
+              center={point}
+              radius={radiusKm * 1000}
+              strokeColor="hsl(var(--accent))"
+              strokeOpacity={0.8}
+              strokeWeight={2}
+              fillColor="hsl(var(--accent))"
+              fillOpacity={0.2}
+            />
+          </>
+        )}
+          <HeatmapEffect data={predictions} />
+          <AirQualityEffect show={showAirQuality} apiKey={apiKey} />
+      </Map>
+    </div>
+  )
+}
+
 // --- MAIN COMPONENT ---
 
 export function MapView({ apiKey, mapId }: { apiKey: string; mapId?: string }) {
@@ -210,14 +281,14 @@ export function MapView({ apiKey, mapId }: { apiKey: string; mapId?: string }) {
     }
   };
 
-  const handleBoundsChanged = (map: google.maps.Map) => {
+  const handleBoundsChanged = useCallback((map: google.maps.Map) => {
     if (mode === 'viewport') {
         const newBounds = map.getBounds();
         if (newBounds) {
           setBounds(newBounds.toUrlValue());
         }
     }
-  };
+  }, [mode]);
 
   const toggleMode = (newMode: Mode) => {
     setPredictions(null); // Clear previous data
@@ -265,49 +336,22 @@ export function MapView({ apiKey, mapId }: { apiKey: string; mapId?: string }) {
     fetchData();
   }, [fetchData]);
 
-  const map = useMap();
-  useEffect(() => {
-      if (!map) return;
-      const idleListener = map.addListener('idle', () => {
-        handleBoundsChanged(map);
-        if (mode === 'point' && !point) {
-          setPoint(map.getCenter()!.toJSON());
-        }
-      });
-      return () => google.maps.event.removeListener(idleListener);
-  }, [map, mode, point]);
-
   return (
     <APIProvider apiKey={apiKey} libraries={["visualization", "core", "marker"]}>
       <TooltipProvider>
-        <div className="relative h-screen w-screen font-body">
-          <Map
-            defaultCenter={INITIAL_CENTER}
-            defaultZoom={INITIAL_ZOOM}
-            mapId={mapId || "DEFAULT_MAP_ID"}
-            gestureHandling="greedy"
-            disableDefaultUI={true}
-            onClick={handleMapClick}
-            className="h-full w-full"
-            styles={[{ "featureType": "poi", "stylers": [{ "visibility": "off" }] }, { "featureType": "transit", "stylers": [{ "visibility": "off" }] }]}
-          >
-            {mode === "point" && point && (
-              <>
-                <AdvancedMarker position={point} />
-                <Circle
-                  center={point}
-                  radius={radiusKm * 1000}
-                  strokeColor="hsl(var(--accent))"
-                  strokeOpacity={0.8}
-                  strokeWeight={2}
-                  fillColor="hsl(var(--accent))"
-                  fillOpacity={0.2}
-                />
-              </>
-            )}
-             <HeatmapEffect data={predictions} />
-             <AirQualityEffect show={showAirQuality} apiKey={apiKey} />
-          </Map>
+        <div className="relative h-screen w-screen">
+          <MapContainer
+            apiKey={apiKey}
+            mapId={mapId}
+            mode={mode}
+            point={point}
+            radiusKm={radiusKm}
+            showAirQuality={showAirQuality}
+            predictions={predictions}
+            handleMapClick={handleMapClick}
+            handleBoundsChanged={handleBoundsChanged}
+            setPoint={setPoint}
+          />
           
           <Card className="absolute left-1/2 top-4 -translate-x-1/2 transform shadow-2xl md:left-4 md:top-4 md:translate-x-0 w-[calc(100%-2rem)] md:w-96">
             <CardHeader>
