@@ -5,9 +5,8 @@ import {
   Map,
   useMap,
   AdvancedMarker,
-  Circle,
 } from "@vis.gl/react-google-maps";
-import { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { add, formatISO } from "date-fns";
 import { useDebounce } from "@/hooks/use-debounce";
 import type { GeoJSONFeatureCollection } from "@/lib/types";
@@ -48,6 +47,33 @@ const HEATMAP_RADIUS = 30;
 const HEATMAP_MAX_INTENSITY = 150; // Adjust based on your data range
 
 type Mode = "viewport" | "point";
+
+// --- CUSTOM CIRCLE COMPONENT ---
+const Circle = (props: google.maps.CircleOptions) => {
+  const map = useMap();
+  const [circle, setCircle] = useState<google.maps.Circle | null>(null);
+
+  useEffect(() => {
+    if (map && !circle) {
+      setCircle(new google.maps.Circle());
+    }
+
+    return () => {
+      if (circle) {
+        circle.setMap(null);
+      }
+    };
+  }, [map, circle]);
+
+  useEffect(() => {
+    if (circle) {
+      circle.setOptions({...props, map});
+    }
+  }, [circle, props, map]);
+
+  return null;
+};
+
 
 // --- SUB-COMPONENTS & EFFECTS ---
 
@@ -273,10 +299,10 @@ export function MapView({ apiKey, mapId }: { apiKey: string; mapId?: string }) {
                 <Circle
                   center={point}
                   radius={radiusKm * 1000}
-                  strokeColor="var(--accent)"
+                  strokeColor="hsl(var(--accent))"
                   strokeOpacity={0.8}
                   strokeWeight={2}
-                  fillColor="var(--accent)"
+                  fillColor="hsl(var(--accent))"
                   fillOpacity={0.2}
                 />
               </>
