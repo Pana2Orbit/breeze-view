@@ -207,8 +207,6 @@ export function MapView({ apiKey, mapId }: { apiKey: string; mapId?: string }) {
   const handleMapClick = (e: google.maps.MapMouseEvent) => {
     if (mode === "point" && e.latLng) {
       setPoint(e.latLng.toJSON());
-      // Here you could trigger fetching optional timeseries data for the point
-      // fetch(`/api/predictions/pointTimeseries?lat=${e.latLng.lat()}&lon=${e.latLng.lng()}`)
     }
   };
 
