@@ -19,7 +19,12 @@ import {
   LoaderCircle,
   MapPin,
   AlertTriangle,
+  Thermometer,
+  Wind,
+  Droplets,
 } from "lucide-react";
+import type { WeatherData } from "@/lib/types";
+import { Separator } from "@/components/ui/separator";
 
 // --- CONFIGURATION ---
 const INITIAL_CENTER = { lat: 36.7783, lng: -119.4179 }; // California
@@ -48,6 +53,7 @@ function MapContainer() {
 
   const [point, setPoint] = useState<google.maps.LatLngLiteral | null>(INITIAL_CENTER);
   const [placeName, setPlaceName] = useState<string | null>(null);
+  const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isValidLocation, setIsValidLocation] = useState(true);
 
@@ -81,20 +87,38 @@ function MapContainer() {
     }
   }, [geocodingLib]);
 
-  const updateLocationInfo = useCallback((latLng: google.maps.LatLngLiteral) => {
+  const getWeatherData = useCallback(async (latLng: google.maps.LatLngLiteral) => {
+    try {
+      const response = await fetch(`/api/weather?lat=${latLng.lat}&lon=${latLng.lng}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch weather');
+      }
+      const data: WeatherData = await response.json();
+      setWeatherData(data);
+    } catch (error) {
+      console.error("Error fetching weather data:", error);
+      setWeatherData(null);
+    }
+  }, []);
+
+  const updateLocationInfo = useCallback(async (latLng: google.maps.LatLngLiteral) => {
     const isActuallyValid = checkLocationValidity(latLng);
     setIsValidLocation(isActuallyValid);
 
     if (isActuallyValid) {
       setIsLoading(true);
-      getPlaceName(latLng).then(name => {
-        setPlaceName(name);
-        setIsLoading(false);
-      });
+      setWeatherData(null); // Reset weather data
+      const [name] = await Promise.all([
+        getPlaceName(latLng),
+        getWeatherData(latLng),
+      ]);
+      setPlaceName(name);
+      setIsLoading(false);
     } else {
       setPlaceName(null);
+      setWeatherData(null);
     }
-  }, [checkLocationValidity, getPlaceName]);
+  }, [checkLocationValidity, getPlaceName, getWeatherData]);
 
   useEffect(() => {
     if (point) {
@@ -106,7 +130,7 @@ function MapContainer() {
     if (e.latLng) {
       const newPos = e.latLng.toJSON();
       setPoint(newPos);
-      updateLocationInfo(newPos);
+      // updateLocationInfo is triggered by the useEffect on point change
     }
   };
 
@@ -122,25 +146,54 @@ function MapContainer() {
             )}
           </div>
           <CardDescription>
-            Drag the marker to select a location.
+            Drag the marker to get location and weather info.
           </CardDescription>
         </CardHeader>
         <CardContent>
             {point && isValidLocation ? (
-                <div className="grid gap-2 text-sm">
-                    <div className="flex items-center gap-2">
-                       <MapPin className="h-4 w-4 text-muted-foreground" />
-                       <span className="font-semibold text-foreground">{placeName || 'Loading...'}</span>
+                <div className="grid gap-4 text-sm">
+                    {/* Location Info */}
+                    <div className="flex items-start gap-2">
+                       <MapPin className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
+                       <div className="flex flex-col">
+                         <span className="font-semibold text-foreground">{placeName || 'Loading...'}</span>
+                         <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                            <p>Lat: <span className="font-mono text-foreground">{point.lat.toFixed(4)}</span></p>
+                            <p>Lon: <span className="font-mono text-foreground">{point.lng.toFixed(4)}</span></p>
+                        </div>
+                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 pl-6">
-                        <div>
-                            <p className="text-muted-foreground">Latitude</p>
-                            <p className="font-mono text-foreground">{point.lat.toFixed(6)}</p>
-                        </div>
-                        <div>
-                            <p className="text-muted-foreground">Longitude</p>
-                            <p className="font-mono text-foreground">{point.lng.toFixed(6)}</p>
-                        </div>
+                    
+                    <Separator />
+
+                    {/* Weather Info */}
+                    <div className="grid gap-3">
+                        <h3 className="font-semibold text-foreground">Current Weather</h3>
+                        {weatherData ? (
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="flex items-center gap-2">
+                                    <img src={`${weatherData.weatherCondition.iconBaseUri}.png`} alt={weatherData.weatherCondition.description.text} className="h-8 w-8" />
+                                    <div>
+                                        <p className="font-bold text-lg text-primary">{Math.round(weatherData.temperature.degrees)}°C</p>
+                                        <p className="text-xs text-muted-foreground capitalize">{weatherData.weatherCondition.description.text}</p>
+                                    </div>
+                                </div>
+                                <div className="grid grid-rows-2 gap-2 text-xs">
+                                     <div className="flex items-center gap-2">
+                                        <Droplets className="h-4 w-4 text-accent" />
+                                        <span>Humidity: {weatherData.relativeHumidity}%</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Wind className="h-4 w-4 text-accent" />
+                                        <span>Wind: {Math.round(weatherData.wind.speed.value)} {weatherData.wind.speed.unit.toLowerCase()}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : isLoading ? (
+                             <p className="text-muted-foreground text-xs">Fetching weather data...</p>
+                        ) : (
+                             <p className="text-muted-foreground text-xs">No weather data available.</p>
+                        )}
                     </div>
                 </div>
             ) : (
