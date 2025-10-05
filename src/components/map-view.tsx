@@ -5,9 +5,9 @@ import {
   Map,
   useMap,
   AdvancedMarker,
+  useMapsLibrary
 } from "@vis.gl/react-google-maps";
 import React, { useState, useEffect, useCallback } from "react";
-import type { GeoJSONFeatureCollection } from "@/lib/types";
 import {
   Card,
   CardContent,
@@ -24,25 +24,28 @@ import {
 const INITIAL_CENTER = { lat: 36.7783, lng: -119.4179 }; // California
 const INITIAL_ZOOM = 7;
 
-// --- MAIN COMPONENT ---
+// --- CHILD COMPONENT for Map Logic ---
 
-export function MapView({ apiKey, mapId }: { apiKey: string; mapId?: string }) {
+function MapContainer() {
+  const map = useMap();
+  const geocodingLib = useMapsLibrary('geocoding');
+
   const [point, setPoint] = useState<google.maps.LatLngLiteral | null>(INITIAL_CENTER);
   const [placeName, setPlaceName] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  
-  const handleMarkerDragEnd = (e: google.maps.MapMouseEvent) => {
-    if (e.latLng) {
-      setPoint(e.latLng.toJSON());
+  const [geocoder, setGeocoder] = useState<google.maps.Geocoder | null>(null);
+
+  useEffect(() => {
+    if (geocodingLib) {
+      setGeocoder(new geocodingLib.Geocoder());
     }
-  };
+  }, [geocodingLib]);
 
   const getPlaceName = useCallback(async (latLng: google.maps.LatLngLiteral) => {
-    if (!window.google || !window.google.maps || !window.google.maps.Geocoder) {
-        console.error("Google Maps API or Geocoder not loaded.");
-        return "Ubicación desconocida";
+    if (!geocoder) {
+        console.error("Geocoder service not available.");
+        return "Servicio no disponible";
     }
-    const geocoder = new google.maps.Geocoder();
     try {
         const response = await geocoder.geocode({ location: latLng });
         if (response.results[0]) {
@@ -54,7 +57,7 @@ export function MapView({ apiKey, mapId }: { apiKey: string; mapId?: string }) {
         console.error("Geocoder failed due to: " + error);
         return "Error en geocodificación";
     }
-  }, []);
+  }, [geocoder]);
 
   useEffect(() => {
     if (point) {
@@ -66,6 +69,58 @@ export function MapView({ apiKey, mapId }: { apiKey: string; mapId?: string }) {
     }
   }, [point, getPlaceName]);
 
+  const handleMarkerDragEnd = (e: google.maps.MapMouseEvent) => {
+    if (e.latLng) {
+      setPoint(e.latLng.toJSON());
+    }
+  };
+
+  return (
+    <>
+      {point && <AdvancedMarker position={point} draggable={true} onDragEnd={handleMarkerDragEnd} />}
+      <Card className="absolute left-1/2 top-4 -translate-x-1/2 transform shadow-2xl md:left-4 md:top-4 md:translate-x-0 w-[calc(100%-2rem)] md:w-96">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="font-headline">Ubicación Seleccionada</CardTitle>
+            {isLoading && (
+              <LoaderCircle className="h-5 w-5 animate-spin text-muted-foreground" />
+            )}
+          </div>
+          <CardDescription>
+            Arrastra el marcador para seleccionar una ubicación.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+            {point ? (
+                <div className="grid gap-2 text-sm">
+                    <div className="flex items-center gap-2">
+                       <MapPin className="h-4 w-4 text-muted-foreground" />
+                       <span className="font-semibold text-foreground">{placeName || 'Cargando...'}</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 pl-6">
+                        <div>
+                            <p className="text-muted-foreground">Latitud</p>
+                            <p className="font-mono text-foreground">{point.lat.toFixed(6)}</p>
+                        </div>
+                        <div>
+                            <p className="text-muted-foreground">Longitud</p>
+                            <p className="font-mono text-foreground">{point.lng.toFixed(6)}</p>
+                        </div>
+                    </div>
+                </div>
+            ) : (
+                <p className="text-sm text-muted-foreground">No se ha seleccionado ninguna ubicación.</p>
+            )}
+        </CardContent>
+      </Card>
+    </>
+  );
+}
+
+
+// --- MAIN COMPONENT ---
+
+export function MapView({ apiKey, mapId }: { apiKey: string; mapId?: string }) {
   return (
     <APIProvider apiKey={apiKey} libraries={["geocoding", "marker"]}>
         <div className="relative h-screen w-screen font-body">
@@ -78,44 +133,8 @@ export function MapView({ apiKey, mapId }: { apiKey: string; mapId?: string }) {
             className="h-full w-full"
             styles={[{ "featureType": "poi", "stylers": [{ "visibility": "off" }] }, { "featureType": "transit", "stylers": [{ "visibility": "off" }] }]}
           >
-            {point && <AdvancedMarker position={point} draggable={true} onDragEnd={handleMarkerDragEnd} />}
+            <MapContainer />
           </Map>
-          
-          <Card className="absolute left-1/2 top-4 -translate-x-1/2 transform shadow-2xl md:left-4 md:top-4 md:translate-x-0 w-[calc(100%-2rem)] md:w-96">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="font-headline">Ubicación Seleccionada</CardTitle>
-                {isLoading && (
-                  <LoaderCircle className="h-5 w-5 animate-spin text-muted-foreground" />
-                )}
-              </div>
-              <CardDescription>
-                Arrastra el marcador para seleccionar una ubicación.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-                {point ? (
-                    <div className="grid gap-2 text-sm">
-                        <div className="flex items-center gap-2">
-                           <MapPin className="h-4 w-4 text-muted-foreground" />
-                           <span className="font-semibold text-foreground">{placeName || 'Cargando...'}</span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2 pl-6">
-                            <div>
-                                <p className="text-muted-foreground">Latitud</p>
-                                <p className="font-mono text-foreground">{point.lat.toFixed(6)}</p>
-                            </div>
-                            <div>
-                                <p className="text-muted-foreground">Longitud</p>
-                                <p className="font-mono text-foreground">{point.lng.toFixed(6)}</p>
-                            </div>
-                        </div>
-                    </div>
-                ) : (
-                    <p className="text-sm text-muted-foreground">No se ha seleccionado ninguna ubicación.</p>
-                )}
-            </CardContent>
-          </Card>
         </div>
     </APIProvider>
   );
