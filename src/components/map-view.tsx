@@ -38,8 +38,8 @@ export function MapView({ apiKey, mapId }: { apiKey: string; mapId?: string }) {
   };
 
   const getPlaceName = useCallback(async (latLng: google.maps.LatLngLiteral) => {
-    if (!window.google || !window.google.maps) {
-        console.error("Google Maps API not loaded.");
+    if (!window.google || !window.google.maps || !window.google.maps.Geocoder) {
+        console.error("Google Maps API or Geocoder not loaded.");
         return "Ubicación desconocida";
     }
     const geocoder = new google.maps.Geocoder();
