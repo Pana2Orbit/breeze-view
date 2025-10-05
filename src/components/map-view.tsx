@@ -22,9 +22,12 @@ import {
   Thermometer,
   Wind,
   Droplets,
+  Cloud,
+  Leaf
 } from "lucide-react";
-import type { WeatherData } from "@/lib/types";
+import type { WeatherData, AirNowData } from "@/lib/types";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 
 // --- CONFIGURATION ---
 const INITIAL_CENTER = { lat: 36.7783, lng: -119.4179 }; // California
@@ -44,6 +47,30 @@ const CALIFORNIA_POLYGON_COORDS = [
 ];
 
 
+// --- UTILITY FUNCTIONS ---
+const getAqiBadgeVariant = (categoryName: string): "default" | "secondary" | "destructive" | "outline" => {
+    switch (categoryName) {
+        case "Good":
+            return "default"; // Will be styled green
+        case "Moderate":
+            return "secondary"; // Will be styled yellow
+        case "Unhealthy for Sensitive Groups":
+            return "outline"; // Will be styled orange
+        default:
+            return "destructive"; // Red for unhealthy and worse
+    }
+};
+
+const AqiCategoryStyles = {
+    Good: "bg-green-500 hover:bg-green-600",
+    Moderate: "bg-yellow-500 hover:bg-yellow-600 text-black",
+    "Unhealthy for Sensitive Groups": "bg-orange-500 hover:bg-orange-600",
+    Unhealthy: "bg-red-500 hover:bg-red-600",
+    "Very Unhealthy": "bg-purple-500 hover:bg-purple-600",
+    Hazardous: "bg-maroon-500 hover:bg-maroon-600",
+};
+
+
 // --- CHILD COMPONENT for Map Logic ---
 
 function MapContainer() {
@@ -54,6 +81,7 @@ function MapContainer() {
   const [point, setPoint] = useState<google.maps.LatLngLiteral | null>(INITIAL_CENTER);
   const [placeName, setPlaceName] = useState<string | null>(null);
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
+  const [airNowData, setAirNowData] = useState<AirNowData[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isValidLocation, setIsValidLocation] = useState(true);
 
@@ -101,24 +129,42 @@ function MapContainer() {
     }
   }, []);
 
+  const getAirNowData = useCallback(async (latLng: google.maps.LatLngLiteral) => {
+    try {
+      const response = await fetch(`/api/airnow?lat=${latLng.lat}&lon=${latLng.lng}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch AirNow data');
+      }
+      const data: AirNowData[] = await response.json();
+      setAirNowData(data);
+    } catch (error) {
+      console.error("Error fetching AirNow data:", error);
+      setAirNowData(null);
+    }
+  }, []);
+
+
   const updateLocationInfo = useCallback(async (latLng: google.maps.LatLngLiteral) => {
     const isActuallyValid = checkLocationValidity(latLng);
     setIsValidLocation(isActuallyValid);
 
     if (isActuallyValid) {
       setIsLoading(true);
-      setWeatherData(null); // Reset weather data
+      setWeatherData(null);
+      setAirNowData(null);
       const [name] = await Promise.all([
         getPlaceName(latLng),
         getWeatherData(latLng),
+        getAirNowData(latLng),
       ]);
       setPlaceName(name);
       setIsLoading(false);
     } else {
       setPlaceName(null);
       setWeatherData(null);
+      setAirNowData(null);
     }
-  }, [checkLocationValidity, getPlaceName, getWeatherData]);
+  }, [checkLocationValidity, getPlaceName, getWeatherData, getAirNowData]);
 
   useEffect(() => {
     if (point) {
@@ -133,6 +179,10 @@ function MapContainer() {
       // updateLocationInfo is triggered by the useEffect on point change
     }
   };
+
+  const pm25 = useMemo(() => airNowData?.find(d => d.ParameterName === "PM2.5"), [airNowData]);
+  const o3 = useMemo(() => airNowData?.find(d => d.ParameterName === "O3"), [airNowData]);
+
 
   return (
     <>
@@ -195,6 +245,49 @@ function MapContainer() {
                              <p className="text-muted-foreground text-xs">No weather data available.</p>
                         )}
                     </div>
+                    
+                    <Separator />
+
+                     {/* Air Quality Info */}
+                    <div className="grid gap-3">
+                        <h3 className="font-semibold text-foreground">Air Quality (AQI)</h3>
+                        {airNowData ? (
+                             <div className="grid grid-cols-2 gap-4">
+                                {pm25 && (
+                                     <div className="flex flex-col gap-2">
+                                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                           <Leaf className="h-4 w-4"/>
+                                           <span>PM2.5</span>
+                                        </div>
+                                        <div className="flex items-baseline gap-2">
+                                            <p className="font-bold text-2xl text-primary">{pm25.AQI}</p>
+                                            <Badge variant={getAqiBadgeVariant(pm25.Category.Name)} className={(AqiCategoryStyles as any)[pm25.Category.Name] || ''}>{pm25.Category.Name}</Badge>
+                                        </div>
+                                    </div>
+                                )}
+                                {o3 && (
+                                     <div className="flex flex-col gap-2">
+                                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                           <Cloud className="h-4 w-4"/>
+                                           <span>Ozone</span>
+                                        </div>
+                                        <div className="flex items-baseline gap-2">
+                                            <p className="font-bold text-2xl text-primary">{o3.AQI}</p>
+                                            <Badge variant={getAqiBadgeVariant(o3.Category.Name)} className={(AqiCategoryStyles as any)[o3.Category.Name] || ''}>{o3.Category.Name}</Badge>
+                                        </div>
+                                    </div>
+                                )}
+                                {!pm25 && !o3 && (
+                                     <p className="text-muted-foreground text-xs col-span-2">No AQI data available for this location.</p>
+                                )}
+                             </div>
+                        ) : isLoading ? (
+                            <p className="text-muted-foreground text-xs">Fetching air quality data...</p>
+                        ) : (
+                            <p className="text-muted-foreground text-xs">No air quality data available.</p>
+                        )}
+                    </div>
+
                 </div>
             ) : (
                 <div className="flex items-center gap-3 text-sm text-destructive-foreground bg-destructive/90 p-4 rounded-lg">

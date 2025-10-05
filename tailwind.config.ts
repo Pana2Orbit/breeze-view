@@ -7,6 +7,21 @@ export default {
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
+  safelist: [ // Add this to ensure dynamic classes for AQI are not purged
+    'bg-green-500',
+    'hover:bg-green-600',
+    'bg-yellow-500',
+    'hover:bg-yellow-600',
+    'text-black',
+    'bg-orange-500',
+    'hover:bg-orange-600',
+    'bg-red-500',
+    'hover:bg-red-600',
+    'bg-purple-500',
+    'hover:bg-purple-600',
+    'bg-maroon-500',
+    'hover:bg-maroon-600',
+  ],
   theme: {
     extend: {
       fontFamily: {

@@ -45,3 +45,21 @@ export interface WeatherData {
         };
     };
 }
+
+export type AirNowCategory = {
+    Number: number;
+    Name: string;
+};
+
+export type AirNowData = {
+    DateObserved: string;
+    HourObserved: number;
+    LocalTimeZone: string;
+    ReportingArea: string;
+    StateCode: string;
+    Latitude: number;
+    Longitude: number;
+    ParameterName: 'PM2.5' | 'O3';
+    AQI: number;
+    Category: AirNowCategory;
+};

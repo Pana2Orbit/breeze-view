@@ -5,4 +5,5 @@ export const config = {
   bqDataset: process.env.BQ_DATASET || '',
   bqTable: process.env.BQ_PRED_TABLE || '',
   bqPredictionColumn: process.env.PRED_COL_NAME || 'pm25_pred',
+  airnowApiKey: process.env.AIRNOW_API_KEY || '',
 };
