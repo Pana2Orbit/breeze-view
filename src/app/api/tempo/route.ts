@@ -6,57 +6,68 @@ import { config } from '@/lib/config';
 // synchronous-like response for simplicity.
 async function fetchHarmonyData(lat: string, lon: string) {
     if (!config.tempoApiToken) {
-        throw new Error('Server is not configured with a TEMPO API token.');
+        // Return a simulated value if the token is not configured
+        // This prevents errors but indicates that the API is not fully set up.
+        console.warn("TEMPO API token not configured. Returning simulated data.");
+        return {
+            value: (Math.random() * 5e15).toExponential(2) + " mol/m²",
+            source: "TEMPO (Simulated - No Token)"
+        };
     }
 
     const collectionId = 'C2799434144-GES_DISC'; // TEMPO L2 NO2
     
-    // Construct the Harmony API URL. 
-    // We request a single point and specify the output format.
-    // Note: The Harmony API might require different parameters or a different structure.
-    // This is a best-effort example based on common patterns.
-    // We create a small bounding box around the point.
-    const buffer = 0.05; // Approx 5km
-    const boundingBox = [
-        parseFloat(lon) - buffer,
-        parseFloat(lat) - buffer,
-        parseFloat(lon) + buffer,
-        parseFloat(lat) + buffer,
-    ].join(',');
-
     const harmonyUrl = new URL('https://harmony.earthdata.nasa.gov/harmony');
     harmonyUrl.searchParams.append('collectionId', collectionId);
-    harmonyUrl.searchParams.append('variable', 'nitrogendioxide_tropospheric_column'); // Example variable name
-    harmonyUrl.searchParams.append('granuleId', 'G2799436443-GES_DISC'); // Need a specific granule or use temporal search
-    harmonyUrl.searchParams.append('outputCrs', 'EPSG:4326');
-    harmonyUrl.searchParams.append('format', 'application/json');
+    harmonyUrl.searchParams.append('variable', 'nitrogendioxide_tropospheric_column'); 
+    // Specifying a single point using subsetting for lat and lon
     harmonyUrl.searchParams.append('subset', `lat(${lat}:${lat})`);
     harmonyUrl.searchParams.append('subset', `lon(${lon}:${lon})`);
+    harmonyUrl.searchParams.append('outputCrs', 'EPSG:4326');
+    harmonyUrl.searchParams.append('format', 'application/json');
+    // We ask for the latest available data, Harmony will find the right granule
+    harmonyUrl.searchParams.append('temporal', 'latest');
 
 
-    // This is a hypothetical endpoint. The actual one will be more complex.
-    // For a real scenario, we would likely need to start a job and poll for results.
-    const placeholderUrl = `https://jsonplaceholder.typicode.com/todos/1`;
+    // The Harmony API is often asynchronous. A real implementation might need to 
+    // poll a job URL. For this example, we attempt a direct request, but it may
+    // not work for all queries.
+    try {
+        const response = await fetch(harmonyUrl.toString(), {
+            headers: {
+                'Authorization': `Bearer ${config.tempoApiToken}`,
+            },
+            next: { revalidate: 3600 } // Cache for 1 hour
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Harmony API Error:", errorText);
+            // Don't throw, just return a simulated value to keep the UI from breaking
+            return {
+                value: "N/A",
+                source: `TEMPO (API Error: ${response.status})`
+            };
+        }
 
-    const response = await fetch(placeholderUrl, {
-        headers: {
-            // 'Authorization': `Bearer ${config.tempoApiToken}`,
-        },
-        next: { revalidate: 3600 } // Cache for 1 hour
-    });
-    
-    if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Harmony API Error:", errorText);
-        throw new Error(`Failed to fetch data from Harmony API. Status: ${response.status}`);
+        // The actual parsing logic would depend on the complex JSON structure returned by Harmony.
+        // This is a placeholder for that parsing logic.
+        const result = await response.json();
+
+        // This is a hypothetical path to the data. It would need to be adjusted based on the real response.
+        const dataValue = result?.features?.[0]?.properties?.data;
+        
+        return {
+            value: dataValue ? `${dataValue.toExponential(2)} mol/m²` : "N/A",
+            source: "TEMPO"
+        };
+    } catch (e) {
+        console.error("Failed to fetch from Harmony API", e);
+        return {
+            value: "N/A",
+            source: `TEMPO (Request Failed)`
+        };
     }
-
-    // Since we don't have the real API, we return a mock value.
-    // The structure of the real response would need to be parsed here.
-    return {
-        value: (Math.random() * 5e15).toExponential(2) + " mol/m²",
-        description: "Simulated TEMPO NO2 Value"
-    };
 }
 
 
@@ -70,12 +81,7 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-        // For now, we will return a simulated value, as the real Harmony API
-        // is complex and requires async job handling which is beyond a simple GET request.
-        const data = {
-            value: (Math.random() * 5e15).toExponential(2) + " mol/m²",
-            source: "TEMPO (Simulated)"
-        };
+        const data = await fetchHarmonyData(lat, lon);
         
         const response = NextResponse.json(data);
         response.headers.set('Cache-Control', 'public, max-age=3600'); // 1-hour cache

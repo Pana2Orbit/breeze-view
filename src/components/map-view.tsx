@@ -173,6 +173,7 @@ function MapContainer() {
     const name = await getPlaceName(latLng);
     setPlaceName(name);
 
+    // Only fetch data if a valid place name was found
     if (name && name !== "Geocoding error") {
         await Promise.all([
             getWeatherData(latLng),
@@ -319,7 +320,7 @@ function MapContainer() {
                                 <Beaker className="h-5 w-5 text-accent flex-shrink-0" />
                                 <div>
                                     <p className="font-bold text-primary">{tempoData.value}</p>
-                                    <p className="text-xs text-muted-foreground">Tropospheric NO₂</p>
+                                    <p className="text-xs text-muted-foreground">Tropospheric NO₂ ({tempoData.source})</p>
                                 </div>
                             </div>
                         ) : isLoading && placeName !== "No address found at this location." ? (
