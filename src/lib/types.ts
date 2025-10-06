@@ -63,3 +63,8 @@ export type AirNowData = {
     AQI: number;
     Category: AirNowCategory;
 };
+
+export type TempoData = {
+    value: string;
+    source: string;
+};

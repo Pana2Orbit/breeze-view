@@ -19,14 +19,14 @@ import {
   LoaderCircle,
   MapPin,
   AlertTriangle,
-  Thermometer,
   Wind,
   Droplets,
   Cloud,
   Leaf,
-  Info
+  Info,
+  Beaker
 } from "lucide-react";
-import type { WeatherData, AirNowData } from "@/lib/types";
+import type { WeatherData, AirNowData, TempoData } from "@/lib/types";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -84,6 +84,7 @@ function MapContainer() {
   const [placeName, setPlaceName] = useState<string | null>(null);
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
   const [airNowData, setAirNowData] = useState<AirNowData[] | null>(null);
+  const [tempoData, setTempoData] = useState<TempoData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isInsideCalifornia, setIsInsideCalifornia] = useState(true);
 
@@ -145,6 +146,20 @@ function MapContainer() {
     }
   }, []);
 
+  const getTempoData = useCallback(async (latLng: google.maps.LatLngLiteral) => {
+    try {
+      const response = await fetch(`/api/tempo?lat=${latLng.lat}&lon=${latLng.lng}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch TEMPO data');
+      }
+      const data: TempoData = await response.json();
+      setTempoData(data);
+    } catch (error) {
+      console.error("Error fetching TEMPO data:", error);
+      setTempoData(null);
+    }
+  }, []);
+
 
   const updateLocationInfo = useCallback(async (latLng: google.maps.LatLngLiteral) => {
     setIsInsideCalifornia(checkLocationValidity(latLng));
@@ -152,6 +167,7 @@ function MapContainer() {
     setIsLoading(true);
     setWeatherData(null);
     setAirNowData(null);
+    setTempoData(null);
     setPlaceName('Loading...');
 
     const name = await getPlaceName(latLng);
@@ -161,6 +177,7 @@ function MapContainer() {
         await Promise.all([
             getWeatherData(latLng),
             getAirNowData(latLng),
+            getTempoData(latLng),
         ]);
     } else if (name === null) {
         setPlaceName("No address found at this location.");
@@ -168,7 +185,7 @@ function MapContainer() {
 
     setIsLoading(false);
 
-  }, [checkLocationValidity, getPlaceName, getWeatherData, getAirNowData]);
+  }, [checkLocationValidity, getPlaceName, getWeatherData, getAirNowData, getTempoData]);
 
   useEffect(() => {
     if (point) {
@@ -289,6 +306,26 @@ function MapContainer() {
                             <p className="text-muted-foreground text-xs">Fetching air quality data...</p>
                         ) : (
                             <p className="text-muted-foreground text-xs">No air quality data available for this location.</p>
+                        )}
+                    </div>
+
+                    <Separator />
+
+                    {/* TEMPO Satellite Data */}
+                    <div className="grid gap-3">
+                        <h3 className="font-semibold text-foreground">Satellite Data (TEMPO)</h3>
+                        {tempoData ? (
+                            <div className="flex items-center gap-2">
+                                <Beaker className="h-5 w-5 text-accent flex-shrink-0" />
+                                <div>
+                                    <p className="font-bold text-primary">{tempoData.value}</p>
+                                    <p className="text-xs text-muted-foreground">Tropospheric NO₂</p>
+                                </div>
+                            </div>
+                        ) : isLoading && placeName !== "No address found at this location." ? (
+                            <p className="text-muted-foreground text-xs">Fetching TEMPO satellite data...</p>
+                        ) : (
+                            <p className="text-muted-foreground text-xs">No TEMPO data available.</p>
                         )}
                     </div>
                     

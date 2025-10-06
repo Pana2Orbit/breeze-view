@@ -6,4 +6,5 @@ export const config = {
   bqTable: process.env.BQ_PRED_TABLE || '',
   bqPredictionColumn: process.env.PRED_COL_NAME || 'pm25_pred',
   airnowApiKey: '064348A5-E73C-46A8-B3C1-CBB8C746965C',
+  tempoApiToken: process.env.TEMPO_API_TOKEN || '',
 };
