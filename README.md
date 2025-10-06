@@ -2,6 +2,9 @@
 
 This is a Next.js application that visualizes PM2.5 air quality predictions from a BigQuery dataset on an interactive Google Map. It's designed to be deployed on Firebase App Hosting.
 
+## DEMO
+![](video_explanation.mp4)
+
 ## Features
 
 - **Hourly Heatmaps**: View PM2.5 prediction heatmaps on an hourly basis using a time slider.
