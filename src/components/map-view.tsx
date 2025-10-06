@@ -218,7 +218,7 @@ function MapContainer() {
   return (
     <>
       {point && <AdvancedMarker position={point} draggable={true} onDragEnd={handleMarkerDragEnd} />}
-      <div className="absolute left-1/2 top-4 -translate-x-1/2 transform md:left-4 md:top-4 md:translate-x-0 w-[calc(100%-2rem)] md:w-96 flex flex-col gap-4">
+      <div className="absolute left-1/2 top-4 -translate-x-1/2 transform md:left-auto md:right-4 md:top-4 md:translate-x-0 w-[calc(100%-2rem)] md:w-96 flex flex-col gap-4">
         {/* Location and Weather Card */}
         <Card className="shadow-2xl">
           <CardHeader>
