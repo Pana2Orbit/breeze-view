@@ -30,6 +30,9 @@ import type { WeatherData, AirNowData, TempoData } from "@/lib/types";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Slider } from "@/components/ui/slider";
+import { Button } from "@/components/ui/button";
 
 // --- CONFIGURATION ---
 const INITIAL_CENTER = { lat: 36.7783, lng: -119.4179 }; // California
@@ -87,6 +90,7 @@ function MapContainer() {
   const [tempoData, setTempoData] = useState<TempoData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isInsideCalifornia, setIsInsideCalifornia] = useState(true);
+  const [forecastHours, setForecastHours] = useState(0.5);
 
   const californiaPolygon = useMemo(() => {
     if (!geometryLib) return null;
@@ -205,6 +209,11 @@ function MapContainer() {
   const pm25 = useMemo(() => airNowData?.find(d => d.ParameterName === "PM2.5"), [airNowData]);
   const o3 = useMemo(() => airNowData?.find(d => d.ParameterName === "O3"), [airNowData]);
 
+  const handlePrediction = () => {
+    // Placeholder for actual prediction logic
+    alert(`Getting prediction for +${forecastHours} hours at the selected location.`);
+  };
+
 
   return (
     <>
@@ -271,44 +280,76 @@ function MapContainer() {
                     <Separator />
 
                      {/* Air Quality Info */}
-                    <div className="grid gap-3">
-                        <h3 className="font-semibold text-foreground">Air Quality (AQI)</h3>
-                        {airNowData && airNowData.length > 0 ? (
-                             <div className="grid grid-cols-2 gap-4">
-                                {pm25 && (
-                                     <div className="flex flex-col gap-2">
-                                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                           <Leaf className="h-4 w-4"/>
-                                           <span>PM2.5</span>
+                    <Tabs defaultValue="current" className="w-full">
+                      <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="current">Current</TabsTrigger>
+                        <TabsTrigger value="forecast">Forecast</TabsTrigger>
+                      </TabsList>
+                      <TabsContent value="current" className="mt-4">
+                        <div className="grid gap-3">
+                            <h3 className="font-semibold text-foreground">Air Quality (AQI)</h3>
+                            {airNowData && airNowData.length > 0 ? (
+                                <div className="grid grid-cols-2 gap-4">
+                                    {pm25 && (
+                                        <div className="flex flex-col gap-2">
+                                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                            <Leaf className="h-4 w-4"/>
+                                            <span>PM2.5</span>
+                                            </div>
+                                            <div className="flex items-baseline gap-2">
+                                                <p className="font-bold text-2xl text-primary">{pm25.AQI}</p>
+                                                <Badge variant={getAqiBadgeVariant(pm25.Category.Name)} className={(AqiCategoryStyles as any)[pm25.Category.Name] || ''}>{pm25.Category.Name}</Badge>
+                                            </div>
                                         </div>
-                                        <div className="flex items-baseline gap-2">
-                                            <p className="font-bold text-2xl text-primary">{pm25.AQI}</p>
-                                            <Badge variant={getAqiBadgeVariant(pm25.Category.Name)} className={(AqiCategoryStyles as any)[pm25.Category.Name] || ''}>{pm25.Category.Name}</Badge>
+                                    )}
+                                    {o3 && (
+                                        <div className="flex flex-col gap-2">
+                                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                            <Cloud className="h-4 w-4"/>
+                                            <span>Ozone</span>
+                                            </div>
+                                            <div className="flex items-baseline gap-2">
+                                                <p className="font-bold text-2xl text-primary">{o3.AQI}</p>
+                                                <Badge variant={getAqiBadgeVariant(o3.Category.Name)} className={(AqiCategoryStyles as any)[o3.Category.Name] || ''}>{o3.Category.Name}</Badge>
+                                            </div>
                                         </div>
-                                    </div>
-                                )}
-                                {o3 && (
-                                     <div className="flex flex-col gap-2">
-                                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                           <Cloud className="h-4 w-4"/>
-                                           <span>Ozone</span>
-                                        </div>
-                                        <div className="flex items-baseline gap-2">
-                                            <p className="font-bold text-2xl text-primary">{o3.AQI}</p>
-                                            <Badge variant={getAqiBadgeVariant(o3.Category.Name)} className={(AqiCategoryStyles as any)[o3.Category.Name] || ''}>{o3.Category.Name}</Badge>
-                                        </div>
-                                    </div>
-                                )}
-                                {!pm25 && !o3 && (
-                                     <p className="text-muted-foreground text-xs col-span-2">No AQI data available for this location.</p>
-                                )}
-                             </div>
-                        ) : isLoading && placeName !== "No address found at this location." ? (
-                            <p className="text-muted-foreground text-xs">Fetching air quality data...</p>
-                        ) : (
-                            <p className="text-muted-foreground text-xs">No air quality data available for this location.</p>
-                        )}
-                    </div>
+                                    )}
+                                    {!pm25 && !o3 && (
+                                        <p className="text-muted-foreground text-xs col-span-2">No AQI data available for this location.</p>
+                                    )}
+                                </div>
+                            ) : isLoading && placeName !== "No address found at this location." ? (
+                                <p className="text-muted-foreground text-xs">Fetching air quality data...</p>
+                            ) : (
+                                <p className="text-muted-foreground text-xs">No air quality data available for this location.</p>
+                            )}
+                        </div>
+                      </TabsContent>
+                      <TabsContent value="forecast" className="mt-4">
+                        <div className="grid gap-4">
+                            <h3 className="font-semibold text-foreground">PM2.5 Prediction</h3>
+                            <div className="grid gap-2">
+                                <label className="text-sm font-medium">Forecast Time</label>
+                                <div className="flex items-center gap-4">
+                                    <Slider
+                                        min={0.5}
+                                        max={3}
+                                        step={0.5}
+                                        value={[forecastHours]}
+                                        onValueChange={(value) => setForecastHours(value[0])}
+                                    />
+                                    <span className="text-sm font-mono w-24 text-center rounded-md bg-muted px-2 py-1">
+                                        +{forecastHours.toFixed(1)} hrs
+                                    </span>
+                                </div>
+                            </div>
+                             <Button onClick={handlePrediction} disabled={!isInsideCalifornia}>
+                                Get Prediction
+                            </Button>
+                        </div>
+                      </TabsContent>
+                    </Tabs>
+
 
                     <Separator />
 
