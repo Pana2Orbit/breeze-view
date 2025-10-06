@@ -98,7 +98,7 @@ function MapContainer() {
     return geometryLib.poly.containsLocation(markerLatLng, californiaPolygon);
   }, [geometryLib, californiaPolygon]);
   
-  const getPlaceName = useCallback(async (latLng: google.maps.LatLngLiteral) => {
+  const getPlaceName = useCallback(async (latLng: google.maps.LatLngLiteral): Promise<string | null> => {
     if (!geocodingLib) {
         console.error("Geocoding library not available.");
         return "Service not available";
@@ -109,7 +109,7 @@ function MapContainer() {
         if (response.results[0]) {
             return response.results[0].formatted_address;
         } else {
-            return "Location name not found";
+            return null; // Return null if no address found (e.g., in the ocean)
         }
     } catch (error) {
         console.error("Geocoder failed due to: " + error);
@@ -152,14 +152,20 @@ function MapContainer() {
     setIsLoading(true);
     setWeatherData(null);
     setAirNowData(null);
+    setPlaceName('Loading...');
 
-    const [name] = await Promise.all([
-      getPlaceName(latLng),
-      getWeatherData(latLng),
-      getAirNowData(latLng),
-    ]);
-
+    const name = await getPlaceName(latLng);
     setPlaceName(name);
+
+    if (name && name !== "Geocoding error") {
+        await Promise.all([
+            getWeatherData(latLng),
+            getAirNowData(latLng),
+        ]);
+    } else if (name === null) {
+        setPlaceName("No address found at this location.");
+    }
+
     setIsLoading(false);
 
   }, [checkLocationValidity, getPlaceName, getWeatherData, getAirNowData]);
@@ -237,7 +243,7 @@ function MapContainer() {
                                     </div>
                                 </div>
                             </div>
-                        ) : isLoading ? (
+                        ) : isLoading && placeName !== "No address found at this location." ? (
                              <p className="text-muted-foreground text-xs">Fetching weather data...</p>
                         ) : (
                              <p className="text-muted-foreground text-xs">No weather data available.</p>
@@ -279,7 +285,7 @@ function MapContainer() {
                                      <p className="text-muted-foreground text-xs col-span-2">No AQI data available for this location.</p>
                                 )}
                              </div>
-                        ) : isLoading ? (
+                        ) : isLoading && placeName !== "No address found at this location." ? (
                             <p className="text-muted-foreground text-xs">Fetching air quality data...</p>
                         ) : (
                             <p className="text-muted-foreground text-xs">No air quality data available for this location.</p>
