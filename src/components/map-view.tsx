@@ -285,6 +285,7 @@ function MapContainer() {
                         <TabsTrigger value="current">Current</TabsTrigger>
                         <TabsTrigger value="forecast">Forecast</TabsTrigger>
                       </TabsList>
+                      <div className="min-h-[140px]">
                       <TabsContent value="current" className="mt-4">
                         <div className="grid gap-3">
                             <h3 className="font-semibold text-foreground">Air Quality (AQI)</h3>
@@ -348,6 +349,7 @@ function MapContainer() {
                             </Button>
                         </div>
                       </TabsContent>
+                      </div>
                     </Tabs>
 
 
