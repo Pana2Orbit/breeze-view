@@ -218,8 +218,9 @@ function MapContainer() {
   return (
     <>
       {point && <AdvancedMarker position={point} draggable={true} onDragEnd={handleMarkerDragEnd} />}
-      <div className="absolute left-1/2 top-4 -translate-x-1/2 transform md:left-auto md:right-4 md:top-4 md:translate-x-0 w-[calc(100%-2rem)] md:w-96 flex flex-col gap-4">
-        {/* Location and Weather Card */}
+      
+      {/* Location and Weather Card (Left) */}
+      <div className="absolute left-4 top-4 w-[calc(100%-2rem)] md:w-96">
         <Card className="shadow-2xl">
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -284,8 +285,10 @@ function MapContainer() {
               )}
           </CardContent>
         </Card>
+      </div>
 
-        {/* Atmospheric Data Card */}
+      {/* Atmospheric Data Card (Right) */}
+      <div className="absolute right-4 top-4 hidden md:block md:w-96">
         <Card className="shadow-2xl">
           <CardContent className="pt-6">
             <div className="grid gap-4 text-sm">
