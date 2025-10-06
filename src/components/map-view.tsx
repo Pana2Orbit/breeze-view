@@ -23,11 +23,13 @@ import {
   Wind,
   Droplets,
   Cloud,
-  Leaf
+  Leaf,
+  Info
 } from "lucide-react";
 import type { WeatherData, AirNowData } from "@/lib/types";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 // --- CONFIGURATION ---
 const INITIAL_CENTER = { lat: 36.7783, lng: -119.4179 }; // California
@@ -83,7 +85,7 @@ function MapContainer() {
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
   const [airNowData, setAirNowData] = useState<AirNowData[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isValidLocation, setIsValidLocation] = useState(true);
+  const [isInsideCalifornia, setIsInsideCalifornia] = useState(true);
 
   const californiaPolygon = useMemo(() => {
     if (!geometryLib) return null;
@@ -145,25 +147,21 @@ function MapContainer() {
 
 
   const updateLocationInfo = useCallback(async (latLng: google.maps.LatLngLiteral) => {
-    const isActuallyValid = checkLocationValidity(latLng);
-    setIsValidLocation(isActuallyValid);
+    setIsInsideCalifornia(checkLocationValidity(latLng));
+    
+    setIsLoading(true);
+    setWeatherData(null);
+    setAirNowData(null);
 
-    if (isActuallyValid) {
-      setIsLoading(true);
-      setWeatherData(null);
-      setAirNowData(null);
-      const [name] = await Promise.all([
-        getPlaceName(latLng),
-        getWeatherData(latLng),
-        getAirNowData(latLng),
-      ]);
-      setPlaceName(name);
-      setIsLoading(false);
-    } else {
-      setPlaceName(null);
-      setWeatherData(null);
-      setAirNowData(null);
-    }
+    const [name] = await Promise.all([
+      getPlaceName(latLng),
+      getWeatherData(latLng),
+      getAirNowData(latLng),
+    ]);
+
+    setPlaceName(name);
+    setIsLoading(false);
+
   }, [checkLocationValidity, getPlaceName, getWeatherData, getAirNowData]);
 
   useEffect(() => {
@@ -200,7 +198,7 @@ function MapContainer() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-            {point && isValidLocation ? (
+            {point ? (
                 <div className="grid gap-4 text-sm">
                     {/* Location Info */}
                     <div className="flex items-start gap-2">
@@ -251,7 +249,7 @@ function MapContainer() {
                      {/* Air Quality Info */}
                     <div className="grid gap-3">
                         <h3 className="font-semibold text-foreground">Air Quality (AQI)</h3>
-                        {airNowData ? (
+                        {airNowData && airNowData.length > 0 ? (
                              <div className="grid grid-cols-2 gap-4">
                                 {pm25 && (
                                      <div className="flex flex-col gap-2">
@@ -284,19 +282,26 @@ function MapContainer() {
                         ) : isLoading ? (
                             <p className="text-muted-foreground text-xs">Fetching air quality data...</p>
                         ) : (
-                            <p className="text-muted-foreground text-xs">No air quality data available.</p>
+                            <p className="text-muted-foreground text-xs">No air quality data available for this location.</p>
                         )}
                     </div>
-
+                    
+                    {!isInsideCalifornia && (
+                      <>
+                        <Separator />
+                        <Alert variant="default" className="bg-accent/10 border-accent/50">
+                          <Info className="h-4 w-4 text-accent" />
+                          <AlertTitle className="font-semibold text-accent">Heads up!</AlertTitle>
+                          <AlertDescription className="text-accent/90">
+                            Advanced data predictions are currently limited to California. We'll get here soon!
+                          </AlertDescription>
+                        </Alert>
+                      </>
+                    )}
                 </div>
             ) : (
-                <div className="flex items-center gap-3 text-sm text-destructive-foreground bg-destructive/90 p-4 rounded-lg">
-                    <AlertTriangle className="h-6 w-6" />
-                    <div className="flex flex-col">
-                        <p className="font-bold">Invalid Location</p>
-                        <p>Please select a point within California.</p>
-                    </div>
-                </div>
+              // This part should ideally not be reached if there's always a point
+              <p>Select a location on the map.</p>
             )}
         </CardContent>
       </Card>
