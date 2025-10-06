@@ -3,10 +3,9 @@
 This is a Next.js application that visualizes PM2.5 air quality predictions from a BigQuery dataset on an interactive Google Map. It's designed to be deployed on Firebase App Hosting.
 
 ## DEMO
-<video src="video_explanation.mp4" controls width="600" loop muted>
+<video src="https://github.com/Pana2Orbit/breeze-view/raw/main/video_explanation.mp4" controls width="600">
   Tu navegador no soporta la reproducción de video.
 </video>
-
 
 ## Features
 
