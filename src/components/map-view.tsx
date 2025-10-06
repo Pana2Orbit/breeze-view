@@ -218,180 +218,187 @@ function MapContainer() {
   return (
     <>
       {point && <AdvancedMarker position={point} draggable={true} onDragEnd={handleMarkerDragEnd} />}
-      <Card className="absolute left-1/2 top-4 -translate-x-1/2 transform shadow-2xl md:left-4 md:top-4 md:translate-x-0 w-[calc(100%-2rem)] md:w-96">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="font-headline">Selected Location</CardTitle>
-            {isLoading && (
-              <LoaderCircle className="h-5 w-5 animate-spin text-muted-foreground" />
-            )}
-          </div>
-          <CardDescription>
-            Drag the marker to get location and weather info.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-            {point ? (
-                <div className="grid gap-4 text-sm">
-                    {/* Location Info */}
-                    <div className="flex items-start gap-2">
-                       <MapPin className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
-                       <div className="flex flex-col">
-                         <span className="font-semibold text-foreground">{placeName || 'Loading...'}</span>
-                         <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                            <p>Lat: <span className="font-mono text-foreground">{point.lat.toFixed(4)}</span></p>
-                            <p>Lon: <span className="font-mono text-foreground">{point.lng.toFixed(4)}</span></p>
+      <div className="absolute left-1/2 top-4 -translate-x-1/2 transform md:left-4 md:top-4 md:translate-x-0 w-[calc(100%-2rem)] md:w-96 flex flex-col gap-4">
+        {/* Location and Weather Card */}
+        <Card className="shadow-2xl">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="font-headline">Selected Location</CardTitle>
+              {isLoading && (
+                <LoaderCircle className="h-5 w-5 animate-spin text-muted-foreground" />
+              )}
+            </div>
+            <CardDescription>
+              Drag the marker to get location and weather info.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+              {point ? (
+                  <div className="grid gap-4 text-sm">
+                      {/* Location Info */}
+                      <div className="flex items-start gap-2">
+                        <MapPin className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
+                        <div className="flex flex-col">
+                          <span className="font-semibold text-foreground">{placeName || 'Loading...'}</span>
+                          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                              <p>Lat: <span className="font-mono text-foreground">{point.lat.toFixed(4)}</span></p>
+                              <p>Lon: <span className="font-mono text-foreground">{point.lng.toFixed(4)}</span></p>
+                          </div>
                         </div>
-                       </div>
-                    </div>
-                    
-                    <Separator />
-
-                    {/* Weather Info */}
-                    <div className="grid gap-3">
-                        <h3 className="font-semibold text-foreground">Current Weather</h3>
-                        {weatherData ? (
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="flex items-center gap-2">
-                                    <img src={`${weatherData.weatherCondition.iconBaseUri}.png`} alt={weatherData.weatherCondition.description.text} className="h-8 w-8" />
-                                    <div>
-                                        <p className="font-bold text-lg text-primary">{Math.round(weatherData.temperature.degrees)}°C</p>
-                                        <p className="text-xs text-muted-foreground capitalize">{weatherData.weatherCondition.description.text}</p>
-                                    </div>
-                                </div>
-                                <div className="grid grid-rows-2 gap-2 text-xs">
-                                     <div className="flex items-center gap-2">
-                                        <Droplets className="h-4 w-4 text-accent" />
-                                        <span>Humidity: {weatherData.relativeHumidity}%</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <Wind className="h-4 w-4 text-accent" />
-                                        <span>Wind: {Math.round(weatherData.wind.speed.value)} {weatherData.wind.speed.unit.toLowerCase()}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        ) : isLoading && placeName !== "No address found at this location." ? (
-                             <p className="text-muted-foreground text-xs">Fetching weather data...</p>
-                        ) : (
-                             <p className="text-muted-foreground text-xs">No weather data available.</p>
-                        )}
-                    </div>
-                    
-                    <Separator />
-
-                     {/* Air Quality Info */}
-                    <Tabs defaultValue="current" className="w-full">
-                      <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="current">Current</TabsTrigger>
-                        <TabsTrigger value="forecast">Forecast</TabsTrigger>
-                      </TabsList>
-                      <div className="min-h-[140px]">
-                      <TabsContent value="current" className="mt-4">
-                        <div className="grid gap-3">
-                            <h3 className="font-semibold text-foreground">Air Quality (AQI)</h3>
-                            {airNowData && airNowData.length > 0 ? (
-                                <div className="grid grid-cols-2 gap-4">
-                                    {pm25 && (
-                                        <div className="flex flex-col gap-2">
-                                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                            <Leaf className="h-4 w-4"/>
-                                            <span>PM2.5</span>
-                                            </div>
-                                            <div className="flex items-baseline gap-2">
-                                                <p className="font-bold text-2xl text-primary">{pm25.AQI}</p>
-                                                <Badge variant={getAqiBadgeVariant(pm25.Category.Name)} className={(AqiCategoryStyles as any)[pm25.Category.Name] || ''}>{pm25.Category.Name}</Badge>
-                                            </div>
-                                        </div>
-                                    )}
-                                    {o3 && (
-                                        <div className="flex flex-col gap-2">
-                                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                            <Cloud className="h-4 w-4"/>
-                                            <span>Ozone</span>
-                                            </div>
-                                            <div className="flex items-baseline gap-2">
-                                                <p className="font-bold text-2xl text-primary">{o3.AQI}</p>
-                                                <Badge variant={getAqiBadgeVariant(o3.Category.Name)} className={(AqiCategoryStyles as any)[o3.Category.Name] || ''}>{o3.Category.Name}</Badge>
-                                            </div>
-                                        </div>
-                                    )}
-                                    {!pm25 && !o3 && (
-                                        <p className="text-muted-foreground text-xs col-span-2">No AQI data available for this location.</p>
-                                    )}
-                                </div>
-                            ) : isLoading && placeName !== "No address found at this location." ? (
-                                <p className="text-muted-foreground text-xs">Fetching air quality data...</p>
-                            ) : (
-                                <p className="text-muted-foreground text-xs">No air quality data available for this location.</p>
-                            )}
-                        </div>
-                      </TabsContent>
-                      <TabsContent value="forecast" className="mt-4">
-                        <div className="grid gap-4">
-                            <h3 className="font-semibold text-foreground">PM2.5 Prediction</h3>
-                            <div className="grid gap-2">
-                                <label className="text-sm font-medium">Forecast Time</label>
-                                <div className="flex items-center gap-4">
-                                    <Slider
-                                        min={0.5}
-                                        max={3}
-                                        step={0.5}
-                                        value={[forecastHours]}
-                                        onValueChange={(value) => setForecastHours(value[0])}
-                                    />
-                                    <span className="text-sm font-mono w-24 text-center rounded-md bg-muted px-2 py-1">
-                                        +{forecastHours.toFixed(1)} hrs
-                                    </span>
-                                </div>
-                            </div>
-                             <Button onClick={handlePrediction} disabled={!isInsideCalifornia}>
-                                Get Prediction
-                            </Button>
-                        </div>
-                      </TabsContent>
                       </div>
-                    </Tabs>
+                      
+                      <Separator />
 
+                      {/* Weather Info */}
+                      <div className="grid gap-3">
+                          <h3 className="font-semibold text-foreground">Current Weather</h3>
+                          {weatherData ? (
+                              <div className="grid grid-cols-2 gap-4">
+                                  <div className="flex items-center gap-2">
+                                      <img src={`${weatherData.weatherCondition.iconBaseUri}.png`} alt={weatherData.weatherCondition.description.text} className="h-8 w-8" />
+                                      <div>
+                                          <p className="font-bold text-lg text-primary">{Math.round(weatherData.temperature.degrees)}°C</p>
+                                          <p className="text-xs text-muted-foreground capitalize">{weatherData.weatherCondition.description.text}</p>
+                                      </div>
+                                  </div>
+                                  <div className="grid grid-rows-2 gap-2 text-xs">
+                                      <div className="flex items-center gap-2">
+                                          <Droplets className="h-4 w-4 text-accent" />
+                                          <span>Humidity: {weatherData.relativeHumidity}%</span>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                          <Wind className="h-4 w-4 text-accent" />
+                                          <span>Wind: {Math.round(weatherData.wind.speed.value)} {weatherData.wind.speed.unit.toLowerCase()}</span>
+                                      </div>
+                                  </div>
+                              </div>
+                          ) : isLoading && placeName !== "No address found at this location." ? (
+                              <p className="text-muted-foreground text-xs">Fetching weather data...</p>
+                          ) : (
+                              <p className="text-muted-foreground text-xs">No weather data available.</p>
+                          )}
+                      </div>
+                  </div>
+              ) : (
+                <p>Select a location on the map.</p>
+              )}
+          </CardContent>
+        </Card>
 
-                    <Separator />
-
-                    {/* TEMPO Satellite Data */}
-                    <div className="grid gap-3">
-                        <h3 className="font-semibold text-foreground">Satellite Data (TEMPO)</h3>
-                        {tempoData ? (
-                            <div className="flex items-center gap-2">
-                                <Beaker className="h-5 w-5 text-accent flex-shrink-0" />
-                                <div>
-                                    <p className="font-bold text-primary">{tempoData.value}</p>
-                                    <p className="text-xs text-muted-foreground">Tropospheric NO₂ ({tempoData.source})</p>
-                                </div>
-                            </div>
-                        ) : isLoading && placeName !== "No address found at this location." ? (
-                            <p className="text-muted-foreground text-xs">Fetching TEMPO satellite data...</p>
-                        ) : (
-                            <p className="text-muted-foreground text-xs">No TEMPO data available.</p>
-                        )}
-                    </div>
-                    
-                    {!isInsideCalifornia && (
-                      <>
-                        <Separator />
-                        <Alert variant="default" className="bg-accent/10 border-accent/50">
-                          <Info className="h-4 w-4 text-accent" />
-                          <AlertTitle className="font-semibold text-accent">Heads up!</AlertTitle>
-                          <AlertDescription className="text-accent/90">
-                            Advanced data predictions are currently limited to California. We'll get here soon!
-                          </AlertDescription>
-                        </Alert>
-                      </>
-                    )}
+        {/* Atmospheric Data Card */}
+        <Card className="shadow-2xl">
+          <CardContent className="pt-6">
+            <div className="grid gap-4 text-sm">
+                {/* Air Quality Info */}
+              <Tabs defaultValue="current" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="current">Current</TabsTrigger>
+                  <TabsTrigger value="forecast">Forecast</TabsTrigger>
+                </TabsList>
+                <div className="min-h-[140px]">
+                <TabsContent value="current" className="mt-4">
+                  <div className="grid gap-3">
+                      <h3 className="font-semibold text-foreground">Air Quality (AQI)</h3>
+                      {airNowData && airNowData.length > 0 ? (
+                          <div className="grid grid-cols-2 gap-4">
+                              {pm25 && (
+                                  <div className="flex flex-col gap-2">
+                                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                      <Leaf className="h-4 w-4"/>
+                                      <span>PM2.5</span>
+                                      </div>
+                                      <div className="flex items-baseline gap-2">
+                                          <p className="font-bold text-2xl text-primary">{pm25.AQI}</p>
+                                          <Badge variant={getAqiBadgeVariant(pm25.Category.Name)} className={(AqiCategoryStyles as any)[pm25.Category.Name] || ''}>{pm25.Category.Name}</Badge>
+                                      </div>
+                                  </div>
+                              )}
+                              {o3 && (
+                                  <div className="flex flex-col gap-2">
+                                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                      <Cloud className="h-4 w-4"/>
+                                      <span>Ozone</span>
+                                      </div>
+                                      <div className="flex items-baseline gap-2">
+                                          <p className="font-bold text-2xl text-primary">{o3.AQI}</p>
+                                          <Badge variant={getAqiBadgeVariant(o3.Category.Name)} className={(AqiCategoryStyles as any)[o3.Category.Name] || ''}>{o3.Category.Name}</Badge>
+                                      </div>
+                                  </div>
+                              )}
+                              {!pm25 && !o3 && (
+                                  <p className="text-muted-foreground text-xs col-span-2">No AQI data available for this location.</p>
+                              )}
+                          </div>
+                      ) : isLoading && placeName !== "No address found at this location." ? (
+                          <p className="text-muted-foreground text-xs">Fetching air quality data...</p>
+                      ) : (
+                          <p className="text-muted-foreground text-xs">No air quality data available for this location.</p>
+                      )}
+                  </div>
+                </TabsContent>
+                <TabsContent value="forecast" className="mt-4">
+                  <div className="grid gap-4">
+                      <h3 className="font-semibold text-foreground">PM2.5 Prediction</h3>
+                      <div className="grid gap-2">
+                          <label className="text-sm font-medium">Forecast Time</label>
+                          <div className="flex items-center gap-4">
+                              <Slider
+                                  min={0.5}
+                                  max={3}
+                                  step={0.5}
+                                  value={[forecastHours]}
+                                  onValueChange={(value) => setForecastHours(value[0])}
+                              />
+                              <span className="text-sm font-mono w-24 text-center rounded-md bg-muted px-2 py-1">
+                                  +{forecastHours.toFixed(1)} hrs
+                              </span>
+                          </div>
+                      </div>
+                        <Button onClick={handlePrediction} disabled={!isInsideCalifornia}>
+                          Get Prediction
+                      </Button>
+                  </div>
+                </TabsContent>
                 </div>
-            ) : (
-              // This part should ideally not be reached if there's always a point
-              <p>Select a location on the map.</p>
-            )}
-        </CardContent>
-      </Card>
+              </Tabs>
+
+
+              <Separator />
+
+              {/* TEMPO Satellite Data */}
+              <div className="grid gap-3">
+                  <h3 className="font-semibold text-foreground">Satellite Data (TEMPO)</h3>
+                  {tempoData ? (
+                      <div className="flex items-center gap-2">
+                          <Beaker className="h-5 w-5 text-accent flex-shrink-0" />
+                          <div>
+                              <p className="font-bold text-primary">{tempoData.value}</p>
+                              <p className="text-xs text-muted-foreground">Tropospheric NO₂ ({tempoData.source})</p>
+                          </div>
+                      </div>
+                  ) : isLoading && placeName !== "No address found at this location." ? (
+                      <p className="text-muted-foreground text-xs">Fetching TEMPO satellite data...</p>
+                  ) : (
+                      <p className="text-muted-foreground text-xs">No TEMPO data available.</p>
+                  )}
+              </div>
+              
+              {!isInsideCalifornia && (
+                <>
+                  <Separator />
+                  <Alert variant="default" className="bg-accent/10 border-accent/50">
+                    <Info className="h-4 w-4 text-accent" />
+                    <AlertTitle className="font-semibold text-accent">Heads up!</AlertTitle>
+                    <AlertDescription className="text-accent/90">
+                      Advanced data predictions are currently limited to California. We'll get here soon!
+                    </AlertDescription>
+                  </Alert>
+                </>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </>
   );
 }
